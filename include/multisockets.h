@@ -18,8 +18,28 @@ struct socket_address_struct {
 	struct sockaddr sa;
 	socklen_t sa_len;
 };
+
+typedef ssize_t TRANSMIT_SIZE;
+#define DLL_EXPORT
 #else
-#error "This OS is not supported"
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+struct socket_struct {
+	SOCKET fd;
+	int domain;
+	int type;
+	int protocol;
+};
+
+struct socket_address_struct {
+	struct sockaddr sa;
+	int sa_len;
+};
+
+typedef long long TRANSMIT_SIZE;
+#define DLL_EXPORT __declspec(dllexport)
+//#error "This OS is not supported"
 #endif
 
 
@@ -29,8 +49,12 @@ typedef struct socket_address_struct socket_address_t;
 enum socket_domain { IPV4, IPV6 };
 enum socket_type { TCP, UDP };
 
-int get_socket_domain(enum socket_domain domain);
-int get_socket_type(enum socket_type type);
+DLL_EXPORT int get_socket_domain(enum socket_domain domain);
+DLL_EXPORT int get_socket_type(enum socket_type type);
+
+
+DLL_EXPORT int sock_init();
+
 
 /*
 Description:
@@ -47,7 +71,7 @@ Returns:
 	On invalid type: -2
 	On error when opening the socket: -3 and errno is set
 */
-int sock_open(socket_t* sock, enum socket_domain domain, enum socket_type type);
+DLL_EXPORT int sock_open(socket_t* sock, enum socket_domain domain, enum socket_type type);
 
 /*
 Description:
@@ -60,7 +84,7 @@ Returns:
 	When sock is a valid socket: 0
 	When sock is NOT a valid socket: -1
 */
-int is_socket(socket_t* sock);
+DLL_EXPORT int is_socket(socket_t* sock);
 
 /*
 Description:
@@ -75,7 +99,7 @@ Returns:
 	On error when marking address as reusable: -1 and errno is set
 	On error when binding address to socket: -2 and errno is set
 */
-int sock_bind(socket_t* sock, socket_address_t* sa);
+DLL_EXPORT int sock_bind(socket_t* sock, socket_address_t* sa);
 
 /*
 Description:
@@ -89,7 +113,7 @@ Returns:
 	On success: 0
 	On error: -1 and errno is set
 */
-int sock_listen(socket_t* sock, int backlog);
+DLL_EXPORT int sock_listen(socket_t* sock, int backlog);
 
 /*
 Description:
@@ -104,7 +128,7 @@ Returns:
 	On success: 0
 	On error: -1 and errno is set
 */
-int sock_accept(socket_t* sock, socket_t* remote_sock, socket_address_t* remote_sa);
+DLL_EXPORT int sock_accept(socket_t* sock, socket_t* remote_sock, socket_address_t* remote_sa);
 
 /*
 Description:
@@ -113,7 +137,7 @@ Description:
 Parameters:
 	sock: The socket object.
 */
-void sock_close(socket_t* sock);
+DLL_EXPORT void sock_close(socket_t* sock);
 
 /*
 Description:
@@ -134,8 +158,8 @@ NOTES:
 	1) Some converters use the heap memory temporarily for processing,
 	such converters may return -3 if an error with memory allocation happens.
 */
-int get_ipv4_address(socket_address_t* sa, const char* ip, const uint16_t port);
-int get_ipv6_address(socket_address_t* sa, const char* ip, const uint16_t port); // heap
+DLL_EXPORT int get_ipv4_address(socket_address_t* sa, const char* ip, const uint16_t port);
+DLL_EXPORT int get_ipv6_address(socket_address_t* sa, const char* ip, const uint16_t port); // heap
 
 
 /*
@@ -151,7 +175,7 @@ Returns:
 	On success: The number of bytes sent
 	On error: -1 and errno is set
 */
-ssize_t sock_send(socket_t* sock, const void *buf, size_t len);
+DLL_EXPORT TRANSMIT_SIZE sock_send(socket_t* sock, const void *buf, size_t len);
 
 /*
 Description:
@@ -172,7 +196,7 @@ NOTES:
 		2) A zero-length datagram (in a domain that permits it) is received.
 		3) The buffer length PARAMETER is 0.
 */
-ssize_t sock_recv(socket_t* sock, void *buf, size_t len);
+DLL_EXPORT TRANSMIT_SIZE sock_recv(socket_t* sock, void *buf, size_t len);
 
 
 

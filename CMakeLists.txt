@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.28.1)
+cmake_minimum_required(VERSION 3.20)
 
-project(multisockets VERSION 1.0.0 DESCRIPTION "libmultisockets provides a common interface for using sockets under different operating systems")
+project(multisockets VERSION 1.0.1 DESCRIPTION "libmultisockets provides a common interface for using sockets under different operating systems")
 
 
 add_library(${PROJECT_NAME} SHARED src/multisockets.c)
