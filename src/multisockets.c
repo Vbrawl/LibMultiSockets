@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -14,6 +15,8 @@
 
 int get_socket_domain(enum socket_domain domain) {
 	switch(domain) {
+	case UNSPEC:
+		return AF_UNSPEC;
 	case IPV4:
 		return AF_INET;
 	case IPV6:
@@ -44,83 +47,54 @@ int sock_init() {
 	return 0;
 }
 
-int sock_open(socket_t *sock, enum socket_domain domain, enum socket_type type) {
-	sock->protocol = 0;
-	if((sock->domain = get_socket_domain(domain)) == -1)
-		{ return -1; }
-	if((sock->type = get_socket_type(type)) == -1)
-		{ return -2; }
-#ifdef __linux__
-	sock->fd = socket(sock->domain, sock->type, sock->protocol);
-	if(sock->fd == -1) { return -3; }
-#elif defined _WIN32
-	sock->fd = socket(sock->domain, sock->type, sock->protocol);
-	if(sock->fd == INVALID_SOCKET) { return -3; }
-#endif
-	return 0;
-}
-/*
-int get_ipv4_address(socket_address_t* sa, const char* ip, const uint16_t port) {
-	struct sockaddr_in* sasa = ((struct sockaddr_in*)(&(sa->sa)));
-	sasa->sin_family = AF_INET;
-	sa->sa_len = sizeof(struct sockaddr_in);
-	sasa->sin_port = htons(port);
-
-	int rc = inet_pton(AF_INET, ip, &sasa->sin_addr);
-
-	if (rc == 1) { return 0; }
-	else if(rc == 0) { return -1; }
-	else { return -2; }
-}
-
-int get_ipv6_address(socket_address_t* sa, const char* ip, const uint16_t port) {
-#ifdef __linux__
-	int ip6_size; // size of actual ip (strlen(ip) without possible %iface suffixes)
-
-	struct sockaddr_in6* sasa = ((struct sockaddr_in6*)(&(sa->sa)));
-	sasa->sin6_family = AF_INET6;
-	sa->sa_len = sizeof(struct sockaddr_in6);
-
-	const char* interface_pointer = memchr(ip, '%', strlen(ip));
-	if(interface_pointer == NULL) { // no %iface suffix
-		sasa->sin6_flowinfo = 0;
-		ip6_size = strlen(ip);
-	}
-	else { // %iface suffix found
-		ip6_size = interface_pointer-ip;
-		sasa->sin6_flowinfo = if_nametoindex(interface_pointer+1);
-	}
-
-	// copy only the IP
-	char* ip6 = malloc(ip6_size+1);
-	if(ip6 == NULL) { return -3; }
-	strncpy(ip6, ip, ip6_size);
-	ip6[ip6_size] = '\0';
-
-	// set port and ip
-	sasa->sin6_port = htons(port);
-	int rc = inet_pton(AF_INET6, ip6, &sasa->sin6_addr);
-	free(ip6);
-	if(rc == 1) { return 0; }
-	else if(rc == 0) { return -1; }
-	else { return -2; }
-#elif defined _WIN32
-#pragma message ("get_ipv6_address: NOT IMPLEMENTED!")
-	return -2;
-#endif
-}
-*/
-int sock_bind(socket_t *sock, socket_address_t* sa) {
+int sock_open_and_bind(socket_t *sock, const char* host, uint16_t port) {
 #ifdef __linux__
 	int opt = 1;
-#elif defined _WIN32
-	const char opt = 1;
+
+	size_t strport_len = snprintf(NULL, 0, "%d", port)+1;
+	char* strport = malloc(strport_len);
+	if(strport == NULL) { return -1; }
+	snprintf(strport, strport_len, "%d", port);
+	strport[strport_len] = '\0';
+
+	struct addrinfo *res, *rp, hints = {
+		.ai_family = sock->domain,
+		.ai_socktype = sock->type,
+		.ai_protocol = sock->protocol,
+		.ai_canonname = NULL,
+		.ai_addr = NULL,
+		.ai_next = NULL
+	};
+
+	if(getaddrinfo(host, strport, &hints, &res) == 0) {
+		for(rp = res; rp != NULL; rp = rp->ai_next) {
+			sock->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+			if(sock->fd == -1) { continue; }
+
+			if(setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+				close(sock->fd);
+				sock->fd = -1;
+				continue;
+			}
+
+			if(bind(sock->fd, res->ai_addr, res->ai_addrlen) == -1) {
+				close(sock->fd);
+				sock->fd = -1;
+				continue;
+			}
+
+			sock->domain = res->ai_family;
+			sock->type = res->ai_socktype;
+			sock->protocol = res->ai_protocol;
+
+			break;
+		}
+		freeaddrinfo(res);
+	}
+	free(strport);
 #endif
 
-	if(setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
-		{ return -1; }
-	if(bind(sock->fd, &sa->sa, sa->sa_len) == -1)
-		{ return -2; }
+	if(sock->fd == -1) { return -1; }
 	return 0;
 }
 

@@ -46,32 +46,46 @@ typedef long long TRANSMIT_SIZE;
 typedef struct socket_struct socket_t;
 typedef struct socket_address_struct socket_address_t;
 
-enum socket_domain { IPV4, IPV6 };
+enum socket_domain { UNSPEC, IPV4, IPV6 };
 enum socket_type { TCP, UDP };
 
+/*
+Description:
+	Translate values from "socket_domain" to socket API values
+
+Parameters:
+	domain: The value to translate.
+
+Returns:
+	On success: The translated domain
+	When domain doesn't exist: -1
+*/
 DLL_EXPORT int get_socket_domain(enum socket_domain domain);
+
+/*
+Description:
+	Translate values from "socket_type" to socket API values
+
+Parameters:
+	type: The value to translate.
+
+Returns:
+	On success: The translated type
+	When type doesn't exist: -1
+*/
 DLL_EXPORT int get_socket_type(enum socket_type type);
-
-
-DLL_EXPORT int sock_init();
 
 
 /*
 Description:
-	Open a socket file descriptor under the specified protocols.
-
-Parameters:
-	sock: The socket object.
-	domain: The lower-level protocol to use. (eg. IPv4)
-	type: The higher-level protocol to use. (eg. TCP)
+	Some OSes require initialization before allowing the usage of sockets.
+	This function performs the required actions to initialize those sockets.
 
 Returns:
 	On success: 0
-	On invalid domain: -1
-	On invalid type: -2
-	On error when opening the socket: -3 and errno is set
+	On failure: -1
 */
-DLL_EXPORT int sock_open(socket_t* sock, enum socket_domain domain, enum socket_type type);
+DLL_EXPORT int sock_init();
 
 /*
 Description:
@@ -88,19 +102,18 @@ DLL_EXPORT int is_socket(socket_t* sock);
 
 /*
 Description:
-	Bind a socket to the specified address.
+	Open and Bind a socket to the specified address.
 
 Parameters:
 	sock: The socket object.
-	sa: A socket_address_t object to fill with the address needed.
+	host: A hostname or ip address.
+	port: A port number.
 
 Returns:
 	On success: 0
-	On error when marking address as reusable: -1 and errno is set
-	On error when binding address to socket: -2 and errno is set
+	On failure: -1
 */
-DLL_EXPORT int sock_bind(socket_t* sock, socket_address_t* sa);
-
+DLL_EXPORT int sock_open_and_bind(socket_t *sock, const char *host, uint16_t port);
 /*
 Description:
 	Listen for connections on a socket.
@@ -138,28 +151,6 @@ Parameters:
 	sock: The socket object.
 */
 DLL_EXPORT void sock_close(socket_t* sock);
-
-/*
-Description:
-	Fill an address object with the specified IP and PORT.
-
-Parameters:
-	sa: Address object.
-	ip: An IP address.
-	port: A PORT number.
-
-Returns:
-	On success: 0
-	On invalid address: -1
-	On unsupported protocol: -2
-	On memory errors: -3 and errno is set (see NOTES)
-
-NOTES:
-	1) Some converters use the heap memory temporarily for processing,
-	such converters may return -3 if an error with memory allocation happens.
-*/
-DLL_EXPORT int get_ipv4_address(socket_address_t* sa, const char* ip, const uint16_t port);
-DLL_EXPORT int get_ipv6_address(socket_address_t* sa, const char* ip, const uint16_t port); // heap
 
 
 /*
