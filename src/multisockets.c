@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <signal.h>
 #include <string.h>
 
 
@@ -39,11 +40,19 @@ int get_socket_type(enum socket_type type) {
 
 
 int sock_init() {
-#ifdef _WIN32
+	int rc = 0;
+#ifdef __linux__
+	struct sigaction ignore_broken_pipe = {
+		.sa_handler = SIG_IGN,
+		.sa_flags = 0
+	};
+	sigemptyset(&ignore_broken_pipe.sa_mask);
+	rc = sigaction(SIGPIPE, &ignore_broken_pipe, NULL);
+#elif defined(_WIN32)
 	WSADATA wsaData;
-	int rc = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (rc != 0) { return -1; }
+	rc = WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
+	if(rc != 0) { return -1; }
 	return 0;
 }
 
