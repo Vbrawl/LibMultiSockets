@@ -2,7 +2,6 @@
 #define MULTISOCKETS_H
 
 #include <stdint.h>
-//#include <stddef.h>
 
 #ifdef __linux__
 #include <sys/socket.h>
@@ -39,7 +38,6 @@ struct socket_address_struct {
 
 typedef long long TRANSMIT_SIZE;
 #define DLL_EXPORT __declspec(dllexport)
-//#error "This OS is not supported"
 #endif
 
 

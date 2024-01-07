@@ -1,5 +1,7 @@
 #include "multisockets.h"
 
+#include <stdio.h>
+
 #ifdef __linux__
 #include <netinet/in.h>
 #include <net/if.h>
@@ -9,8 +11,6 @@
 #include <signal.h>
 #include <string.h>
 
-
-#include <stdio.h>
 #include <stdlib.h>
 #endif
 
@@ -57,14 +57,17 @@ int sock_init() {
 }
 
 int sock_open_and_bind(socket_t *sock, const char* host, uint16_t port) {
+#if defined(__linux__) || defined(_WIN32)
 #ifdef __linux__
 	int opt = 1;
-
-	size_t strport_len = snprintf(NULL, 0, "%d", port)+1;
+#elif defined(_WIN32)
+	const char opt = 1;
+#endif
+	size_t strport_len = ((size_t)snprintf(NULL, 0, "%d", port))+1;
 	char* strport = malloc(strport_len);
 	if(strport == NULL) { return -1; }
 	snprintf(strport, strport_len, "%d", port);
-	strport[strport_len] = '\0';
+	strport[strport_len-1] = '\0';
 
 	struct addrinfo *res, *rp, hints = {
 		.ai_family = sock->domain,
