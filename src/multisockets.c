@@ -123,6 +123,7 @@ int sock_accept(socket_t *sock, socket_t *remote_sock, socket_address_t *remote_
 	remote_sock->protocol = sock->protocol;
 
 #if defined(__linux__) || defined(_WIN32)
+	remote_sa->sa_len = sizeof(remote_sa->sa);
 	remote_sock->fd = accept(sock->fd, &remote_sa->sa, &remote_sa->sa_len);
 	if(remote_sock->fd == -1) { return -1; }
 #endif
