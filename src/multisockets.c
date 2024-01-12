@@ -162,3 +162,11 @@ TRANSMIT_SIZE sock_recv(socket_t *sock, void *buf, size_t len) {
 	return recv(sock->fd, buf, len, 0);
 #endif
 }
+
+
+// Check whether we need to define the function
+#ifdef __linux__
+int sock2fd(socket_t *sock) {
+	return sock->fd;
+}
+#endif

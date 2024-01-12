@@ -189,4 +189,20 @@ DLL_EXPORT TRANSMIT_SIZE sock_recv(socket_t* sock, void *buf, size_t len);
 
 
 
+/*
+Description:
+	Duplicate socket fd to another fd.
+
+Parameters:
+	sock: The socket object.
+
+Returns:
+	The socket file descriptor.
+*/
+#ifdef __linux__
+DLL_EXPORT int sock2fd(socket_t* sock);
+#else
+#define sock2fd(sock) do { _Static_assert(0, "sock2fd not supported on this platform."); } while(0);
+#endif
+
 #endif
