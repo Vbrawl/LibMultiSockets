@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release)
+endif()
+
 project(multisockets VERSION 1.0.1 DESCRIPTION "libmultisockets provides a common interface for using sockets under different operating systems")
 
 

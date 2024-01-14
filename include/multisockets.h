@@ -100,6 +100,21 @@ DLL_EXPORT int is_socket(socket_t* sock);
 
 /*
 Description:
+	Open an Connect a socket to the specified address.
+
+Parameters:
+	sock: The socket object.
+	host: A hostname or ip address.
+	port: A port number.
+
+Returns:
+	On success: 0
+	On failure: -1
+*/
+DLL_EXPORT int sock_open_and_connect(socket_t *sock, const char *host, uint16_t port);
+
+/*
+Description:
 	Open and Bind a socket to the specified address.
 
 Parameters:

@@ -56,6 +56,49 @@ int sock_init() {
 	return 0;
 }
 
+int sock_open_and_connect(socket_t *sock, const char* host, uint16_t port) {
+#if defined(__linux__)
+	size_t strport_len = ((size_t)snprintf(NULL, 0, "%d", port))+1;
+	char* strport = malloc(strport_len);
+	if(strport == NULL) { return -1; }
+	snprintf(strport, strport_len, "%d", port);
+	strport[strport_len-1] = '\0';
+
+	struct addrinfo *res, *rp, hints = {
+		.ai_family = sock->domain,
+		.ai_socktype = sock->type,
+		.ai_protocol = sock->protocol,
+		.ai_canonname = NULL,
+		.ai_addr = NULL,
+		.ai_next = NULL
+	};
+
+	if(getaddrinfo(host, strport, &hints, &res) == 0) {
+		for(rp = res; rp != NULL; rp = rp->ai_next) {
+			sock->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+			if(sock->fd == -1) { continue; }
+
+			if(connect(sock->fd, res->ai_addr, res->ai_addrlen) == -1) {
+				close(sock->fd);
+				sock->fd = -1;
+				continue;
+			}
+
+			sock->domain = res->ai_family;
+			sock->type = res->ai_socktype;
+			sock->protocol = res->ai_protocol;
+
+			break;
+		}
+		freeaddrinfo(res);
+	}
+	free(strport);
+#endif
+
+	if(sock->fd == -1) { return -1; }
+	else { return 0; }
+}
+
 int sock_open_and_bind(socket_t *sock, const char* host, uint16_t port) {
 #if defined(__linux__) || defined(_WIN32)
 #ifdef __linux__
